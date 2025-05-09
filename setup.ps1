@@ -203,34 +203,34 @@ New-AzRoleAssignment -Objectid $id -RoleDefinitionName "Storage Blob Data Owner"
 New-AzRoleAssignment -SignInName $userName -RoleDefinitionName "Storage Blob Data Owner" -Scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Storage/storageAccounts/$dataLakeAccountName" -ErrorAction SilentlyContinue;
 
 
-# Create database (replace sqlcmd with Invoke-Sqlcmd)
-Write-Host "Creating the $sqlDatabaseName database..."
+# Prompt for container and external data source name
+$containerName = Read-Host "Enter the Blob container name where your data files are stored"
+$externalDataSourceName = Read-Host "Enter the external data source name created in your SQL database"
+
+# Create database
 Install-Module -Name SqlServer -Force -Scope CurrentUser
 Import-Module SqlServer
+Write-Host "Creating the $sqlDatabaseName database..."
 Invoke-Sqlcmd -ServerInstance "$synapseWorkspace.sql.azuresynapse.net" `
     -Username $sqlUser `
     -Password $sqlPassword `
     -Database $sqlDatabaseName `
     -InputFile "setup.sql"
 
-# Load data (replace bcp with Invoke-Sqlcmd + BULK INSERT)
-Write-Host "Loading data..."
-# Assume files are uploaded to Azure Blob Storage and accessible via an external data source named 'MyExternalDataSource'
-# Update 'MyExternalDataSource' and the file paths as appropriate for your environment
-
+# Load data
+Write-Host "Loading data from Azure Blob Storage..."
 Get-ChildItem "./data/*.txt" -File | ForEach-Object {
     Write-Host ""
     $file = $_.Name
     Write-Host $file
     $table = $_.Name.Replace(".txt","")
-    # Construct the BULK INSERT command
-    $blobUrl = "https://<yourstorageaccount>.blob.core.windows.net/<yourcontainer>/$file" # Update this!
+    $blobUrl = "https://$dataLakeAccountName.blob.core.windows.net/$containerName/$file"
     $formatFileUrl = $blobUrl.Replace(".txt", ".fmt")
     $bulkInsert = @"
 BULK INSERT dbo.$table
 FROM '$blobUrl'
 WITH (
-    DATA_SOURCE = 'MyExternalDataSource',
+    DATA_SOURCE = '$externalDataSourceName',
     FORMATFILE = '$formatFileUrl',
     FIRSTROW = 2,
     TABLOCK
