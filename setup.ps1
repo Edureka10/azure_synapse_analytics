@@ -203,18 +203,44 @@ New-AzRoleAssignment -Objectid $id -RoleDefinitionName "Storage Blob Data Owner"
 New-AzRoleAssignment -SignInName $userName -RoleDefinitionName "Storage Blob Data Owner" -Scope "/subscriptions/$subscriptionId/resourceGroups/$resourceGroupName/providers/Microsoft.Storage/storageAccounts/$dataLakeAccountName" -ErrorAction SilentlyContinue;
 
 
-# Create database
-write-host "Creating the $sqlDatabaseName database..."
-sqlcmd -S "$synapseWorkspace.sql.azuresynapse.net" -U $sqlUser -P $sqlPassword -d $sqlDatabaseName -I -i setup.sql
+# Create database (replace sqlcmd with Invoke-Sqlcmd)
+Write-Host "Creating the $sqlDatabaseName database..."
+Install-Module -Name SqlServer -Force -Scope CurrentUser
+Import-Module SqlServer
+Invoke-Sqlcmd -ServerInstance "$synapseWorkspace.sql.azuresynapse.net" `
+    -Username $sqlUser `
+    -Password $sqlPassword `
+    -Database $sqlDatabaseName `
+    -InputFile "setup.sql"
 
-# Load data
-write-host "Loading data..."
-Get-ChildItem "./data/*.txt" -File | Foreach-Object {
-    write-host ""
-    $file = $_.FullName
-    Write-Host "$file"
+# Load data (replace bcp with Invoke-Sqlcmd + BULK INSERT)
+Write-Host "Loading data..."
+# Assume files are uploaded to Azure Blob Storage and accessible via an external data source named 'MyExternalDataSource'
+# Update 'MyExternalDataSource' and the file paths as appropriate for your environment
+
+Get-ChildItem "./data/*.txt" -File | ForEach-Object {
+    Write-Host ""
+    $file = $_.Name
+    Write-Host $file
     $table = $_.Name.Replace(".txt","")
-    bcp dbo.$table in $file -S "$synapseWorkspace.sql.azuresynapse.net" -U $sqlUser -P $sqlPassword -d $sqlDatabaseName -f $file.Replace("txt", "fmt") -q -k -E -b 5000
+    # Construct the BULK INSERT command
+    $blobUrl = "https://<yourstorageaccount>.blob.core.windows.net/<yourcontainer>/$file" # Update this!
+    $formatFileUrl = $blobUrl.Replace(".txt", ".fmt")
+    $bulkInsert = @"
+BULK INSERT dbo.$table
+FROM '$blobUrl'
+WITH (
+    DATA_SOURCE = 'MyExternalDataSource',
+    FORMATFILE = '$formatFileUrl',
+    FIRSTROW = 2,
+    TABLOCK
+)
+"@
+    Invoke-Sqlcmd -ServerInstance "$synapseWorkspace.sql.azuresynapse.net" `
+        -Username $sqlUser `
+        -Password $sqlPassword `
+        -Database $sqlDatabaseName `
+        -Query $bulkInsert
 }
 
 # Pause SQL Pool
