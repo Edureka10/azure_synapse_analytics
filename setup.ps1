@@ -1,7 +1,14 @@
 Clear-Host
 write-host "Starting script at $(Get-Date)"
 Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-Install-Module -Name Az.Synapse -Force
+# Install Az.Synapse if not present
+Install-Module -Name Az.Synapse -AllowClobber -Force
+# Import the module explicitly
+Import-Module Az.Synapse
+# Install SQL Server tools
+winget install --id Microsoft.Sqlcmd -e
+winget install --id Microsoft.BCP -e
+
 
 # Handle cases where the user has multiple subscriptions
 $subs = Get-AzSubscription | Select-Object
