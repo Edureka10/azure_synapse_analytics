@@ -5,10 +5,10 @@
 3       SQLNCHAR          0       20      ","     3     Gender                  SQL_Latin1_General_CP1_CI_AS
 4       SQLNCHAR          0       50      ","     4     ItemPurchased           SQL_Latin1_General_CP1_CI_AS
 5       SQLNCHAR          0       50      ","     5     Category                SQL_Latin1_General_CP1_CI_AS
-6       SQLMONEY          0       8       ","     6     PurchaseAmountUSD       ""
+6       SQLINT            0       8       ","     6     PurchaseAmountUSD       ""
 7       SQLNCHAR          0       50      ","     7     Location                SQL_Latin1_General_CP1_CI_AS
 8       SQLNCHAR          0       30      ","     9     Color                   SQL_Latin1_General_CP1_CI_AS
-9      SQLNCHAR          0       20      ","     10    Season                  SQL_Latin1_General_CP1_CI_AS
+9      SQLNCHAR           0       20      ","     10    Season                  SQL_Latin1_General_CP1_CI_AS
 10      SQLDECIMAL        0       4       ","     11    ReviewRating            ""
 11      SQLNCHAR          0       5       ","     12    SubscriptionStatus      SQL_Latin1_General_CP1_CI_AS
 12      SQLNCHAR          0       30      ","     13    PaymentMethod           SQL_Latin1_General_CP1_CI_AS
